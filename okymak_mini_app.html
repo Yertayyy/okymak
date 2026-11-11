@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Окымак — личный трекер</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{color-scheme:light dark;--bg:var(--tg-theme-bg-color,#f5f6f8);--card:var(--tg-theme-secondary-bg-color,#fff);--text:var(--tg-theme-text-color,#17202a);--muted:var(--tg-theme-hint-color,#7d8793);--accent:var(--tg-theme-button-color,#2787f5);--accentText:var(--tg-theme-button-text-color,#fff);--line:rgba(127,137,150,.2);--good:#24a36b;--radius:18px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+header{padding:20px 18px 10px;display:flex;justify-content:space-between;align-items:center}.brand{font-size:22px;font-weight:800;letter-spacing:-.5px}.sub{color:var(--muted);font-size:13px}.avatar{width:38px;height:38px;border-radius:50%;background:var(--accent);color:var(--accentText);display:grid;place-items:center;font-weight:800}
+main{padding:8px 16px 20px;max-width:720px;margin:auto}.greeting{font-size:24px;font-weight:750;margin:8px 0 3px}.date{color:var(--muted);font-size:13px;margin-bottom:17px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:16px}.stat,.panel,.task,.habit,.goal{background:var(--card);border-radius:var(--radius);padding:14px;border:1px solid var(--line)}.stat strong{display:block;font-size:23px}.stat span{font-size:11px;color:var(--muted)}
+.progress{height:7px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:10px}.progress i{display:block;height:100%;width:0;background:var(--good);border-radius:99px;transition:width .2s}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin:20px 2px 10px}.section-head h2{font-size:17px;margin:0}.link{border:0;background:none;color:var(--accent);font:inherit}
+.task-list{display:grid;gap:9px}.task{display:flex;align-items:flex-start;gap:11px}.check{width:22px;height:22px;border-radius:50%;border:1.7px solid var(--muted);background:transparent;flex:none;margin-top:1px}.task.done .check{background:var(--good);border-color:var(--good);color:white}.task.done .task-title{text-decoration:line-through;color:var(--muted)}.task-body{min-width:0;flex:1}.task-title{font-weight:650;overflow-wrap:anywhere}.meta{font-size:12px;color:var(--muted);margin-top:4px}.tag{display:inline-block;border-radius:7px;padding:3px 7px;background:rgba(127,137,150,.13);font-size:11px;margin-right:5px}
+.empty{color:var(--muted);text-align:center;padding:25px 10px;background:var(--card);border-radius:var(--radius);border:1px dashed var(--line)}
+.primary{background:var(--accent);color:var(--accentText);border:0;border-radius:13px;padding:12px 15px;font:600 14px inherit}
+.fab{position:fixed;right:18px;bottom:calc(88px + env(safe-area-inset-bottom));width:54px;height:54px;border:0;border-radius:50%;background:var(--accent);color:var(--accentText);font-size:28px;box-shadow:0 5px 20px #0002}
+nav{position:fixed;bottom:0;left:0;right:0;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);z-index:5}
+nav button{border:0;background:none;color:var(--muted);font-size:10px;padding:5px 0;display:grid;gap:3px;justify-items:center}nav button b{font-size:20px;font-weight:500}nav button.active{color:var(--accent)}
+.page{display:none}.page.active{display:block}
+.field{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:12px;padding:12px;font:inherit;margin:6px 0 12px}
+label{font-size:12px;color:var(--muted)}.formrow{display:grid;grid-template-columns:1fr 1fr;gap:9px}.goal,.habit{margin-bottom:9px}.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.smallbtn{border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);padding:7px 10px}
+.modal{position:fixed;inset:0;background:#0007;display:none;align-items:flex-end;z-index:10}.modal.show{display:flex}.sheet{width:100%;background:var(--card);border-radius:22px 22px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));max-height:90vh;overflow:auto}.sheet h2{margin:0 0 14px}.sheet-actions{display:flex;gap:9px}.sheet-actions>*{flex:1}
+.note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:14px}
+</style>
+</head>
+<body>
+<header><div><div class="brand">◉ Окымак</div><div class="sub">Твой порядок в делах и целях</div></div><div class="avatar" id="avatar">О</div></header>
+<main>
+<section id="home" class="page active">
+<div class="greeting">Привет! 👋</div><div class="date" id="todayLabel"></div>
+<div class="stats">
+ <div class="stat"><strong id="totalCount">0</strong><span>Задач всего</span></div>
+ <div class="stat"><strong id="doneCount">0</strong><span>Выполнено</span></div>
+ <div class="stat"><strong id="leftCount">0</strong><span>Осталось</span></div>
+</div>
+<div class="panel"><div class="row"><b>Прогресс на сегодня</b><b id="percent">0%</b></div><div class="progress"><i id="progressBar"></i></div></div>
+<div class="section-head"><h2>Ближайшие задачи</h2><button class="link" onclick="showPage('tasks')">Все задачи →</button></div>
+<div id="homeTasks" class="task-list"></div>
+<div class="section-head"><h2>Фокус дня</h2></div>
+<div class="panel"><div style="font-weight:650">Одна важная задача за раз</div><div class="sub">Добавляй дела, отмечай выполненное и двигайся постепенно.</div></div>
+</section>
+<section id="tasks" class="page">
+<div class="greeting">Задачи</div><div class="date">Работа и личная жизнь — в одном месте</div>
+<div class="row"><button class="smallbtn" onclick="filterTasks='all';render()">Все</button><button class="smallbtn" onclick="filterTasks='Работа';render()">💼 Работа</button><button class="smallbtn" onclick="filterTasks='Личное';render()">🏠 Личное</button></div>
+<div class="section-head"><h2>Мой список</h2><span class="sub" id="taskTotal"></span></div><div id="allTasks" class="task-list"></div>
+</section>
+<section id="habits" class="page">
+<div class="greeting">Привычки</div><div class="date">Маленькие действия создают большие изменения</div>
+<div class="panel"><div class="row"><b>Привычки на сегодня</b><span class="sub" id="habitProgress">0 / 3</span></div><div class="progress"><i id="habitBar"></i></div></div>
+<div id="habitList" style="margin-top:12px"></div><button class="primary" onclick="addHabit()">＋ Добавить привычку</button>
+</section>
+<section id="goals" class="page">
+<div class="greeting">Цели</div><div class="date">Держи направление и отмечай прогресс</div><div id="goalList"></div><button class="primary" onclick="addGoal()">＋ Добавить цель</button>
+</section>
+<section id="stats" class="page">
+<div class="greeting">Статистика</div><div class="date">Твой прогресс в цифрах</div>
+<div class="stats"><div class="stat"><strong id="sTotal">0</strong><span>Создано</span></div><div class="stat"><strong id="sDone">0</strong><span>Выполнено</span></div><div class="stat"><strong id="sRate">0%</strong><span>Доля выполнения</span></div></div>
+<div class="panel"><b>По категориям</b><p id="byCategory" class="sub">Пока нет задач</p></div>
+<p class="note">В этой первой версии данные хранятся в памяти браузера Telegram на этом устройстве. Для синхронизации между устройствами подключим сервер и базу данных.</p>
+</section>
+</main>
+<button class="fab" onclick="openTask()">＋</button>
+<nav>
+<button class="active" data-page="home" onclick="showPage('home')"><b>⌂</b>Главная</button>
+<button data-page="tasks" onclick="showPage('tasks')"><b>☷</b>Задачи</button>
+<button data-page="habits" onclick="showPage('habits')"><b>↻</b>Привычки</button>
+<button data-page="goals" onclick="showPage('goals')"><b>◎</b>Цели</button>
+<button data-page="stats" onclick="showPage('stats')"><b>▥</b>Статистика</button>
+</nav>
+<div class="modal" id="taskModal"><div class="sheet">
+<h2>Новая задача</h2>
+<label>Название</label><input id="taskName" class="field" placeholder="Например, подготовить план смены">
+<div class="formrow"><div><label>Категория</label><select id="taskCategory" class="field"><option>Личное</option><option>Работа</option></select></div><div><label>Приоритет</label><select id="taskPriority" class="field"><option>Обычный</option><option>Высокий</option><option>Срочный</option></select></div></div>
+<label>Срок</label><input id="taskDate" type="datetime-local" class="field">
+<div class="sheet-actions"><button class="smallbtn" onclick="closeTask()">Отмена</button><button class="primary" onclick="saveTask()">Сохранить</button></div>
+</div></div>
+<script>
+const tg=window.Telegram?.WebApp;
+if(tg){tg.ready();tg.expand();try{tg.setHeaderColor('secondary_bg_color');tg.setBackgroundColor('bg_color')}catch(e){}}
+let tasks=JSON.parse(localStorage.getItem('okymak_tasks')||'[]');
+let habits=JSON.parse(localStorage.getItem('okymak_habits')||'null') || ["Читать 10 страниц","Тренировка или прогулка","Изучать Python"].map(x=>({name:x,done:false}));
+let goals=JSON.parse(localStorage.getItem('okymak_goals')||'[]');
+let filterTasks='all';
+const $=id=>document.getElementById(id);
+const today=new Date();
+$('todayLabel').textContent=today.toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'});
+function persist(){localStorage.setItem('okymak_tasks',JSON.stringify(tasks));localStorage.setItem('okymak_habits',JSON.stringify(habits));localStorage.setItem('okymak_goals',JSON.stringify(goals))}
+function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===id));render()}
+function openTask(){ $('taskModal').classList.add('show');$('taskName').focus()}
+function closeTask(){ $('taskModal').classList.remove('show')}
+function saveTask(){let name=$('taskName').value.trim();if(!name){alert('Напиши название задачи');return}tasks.unshift({id:Date.now(),name,category:$('taskCategory').value,priority:$('taskPriority').value,date:$('taskDate').value,done:false});$('taskName').value='';$('taskDate').value='';persist();closeTask();render()}
+function toggleTask(id){let t=tasks.find(x=>x.id===id);if(t)t.done=!t.done;persist();render()}
+function removeTask(id){tasks=tasks.filter(x=>x.id!==id);persist();render()}
+function taskHTML(t){let date=t.date?new Date(t.date).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'Без срока';return `<div class="task ${t.done?'done':''}"><button class="check" onclick="toggleTask(${t.id})">${t.done?'✓':''}</button><div class="task-body"><div class="task-title">${escapeHTML(t.name)}</div><div class="meta"><span class="tag">${t.category}</span><span class="tag">${t.priority}</span>${date}</div></div><button class="smallbtn" onclick="removeTask(${t.id})">×</button></div>`}
+function escapeHTML(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){let active=tasks.filter(t=>!t.done),done=tasks.filter(t=>t.done).length,rate=tasks.length?Math.round(done/tasks.length*100):0;$('totalCount').textContent=tasks.length;$('doneCount').textContent=done;$('leftCount').textContent=active.length;$('percent').textContent=rate+'%';$('progressBar').style.width=rate+'%';$('taskTotal').textContent=active.length+' активных';let sorted=[...active].sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));$('homeTasks').innerHTML=sorted.slice(0,4).map(taskHTML).join('')||'<div class="empty">Пока нет задач. Нажми ＋, чтобы добавить первую.</div>';let shown=filterTasks==='all'?sorted:sorted.filter(t=>t.category===filterTasks);$('allTasks').innerHTML=shown.map(taskHTML).join('')||'<div class="empty">Здесь пока пусто.</div>';$('sTotal').textContent=tasks.length;$('sDone').textContent=done;$('sRate').textContent=rate+'%';$('byCategory').textContent=`Работа: ${tasks.filter(t=>t.category==='Работа').length} · Личное: ${tasks.filter(t=>t.category==='Личное').length}`;renderHabits();renderGoals()}
+function renderHabits(){let n=habits.filter(h=>h.done).length;$('habitProgress').textContent=n+' / '+habits.length;$('habitBar').style.width=(habits.length?n/habits.length*100:0)+'%';$('habitList').innerHTML=habits.map((h,i)=>`<div class="habit row"><div><b>${escapeHTML(h.name)}</b><div class="meta">${h.done?'Выполнено сегодня':'На сегодня'}</div></div><button class="smallbtn" onclick="toggleHabit(${i})">${h.done?'✓ Готово':'Отметить'}</button></div>`).join('')||'<div class="empty">Добавь первую привычку.</div>'}
+function toggleHabit(i){habits[i].done=!habits[i].done;persist();render()}
+function addHabit(){let n=prompt('Название привычки');if(n&&n.trim()){habits.push({name:n.trim(),done:false});persist();render()}}
+function renderGoals(){$('goalList').innerHTML=goals.map((g,i)=>`<div class="goal"><div class="row"><b>${escapeHTML(g.name)}</b><button class="smallbtn" onclick="removeGoal(${i})">×</button></div><div class="meta">${g.progress}% выполнено</div><div class="progress"><i style="width:${g.progress}%"></i></div><input type="range" min="0" max="100" value="${g.progress}" onchange="setGoal(${i},this.value)" style="width:100%;accent-color:var(--accent)"></div>`).join('')||'<div class="empty">Пока нет целей. Добавь свою первую.</div>'}
+function addGoal(){let n=prompt('Название цели');if(n&&n.trim()){goals.push({name:n.trim(),progress:0});persist();render()}}
+function setGoal(i,v){goals[i].progress=Number(v);persist();render()}
+function removeGoal(i){goals.splice(i,1);persist();render()}
+render();
+</script>
+</body>
+</html>
